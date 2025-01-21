@@ -1,8 +1,8 @@
-# tinykmetrics
+# TinyKMetrics
 
 Tiny kubernetes metrics collector for influxdb.
 
-## Start influxdb
+## Start InfluxDB
 
 ```bash
 podman run -p 8086:8086 \
@@ -15,7 +15,7 @@ podman run -p 8086:8086 \
   influxdb:2.7.1
 ```
 
-## Run tinykmetrics
+## Run TinyKMetrics
 
 ```bash
 go run cmd/tinykmetrics/main.go --influx-url=http://localhost:8086 \
@@ -75,23 +75,42 @@ spec:
       serviceAccountName: tinykmetrics
       containers:
       - name: tinykmetrics
-        image: tinykmetrics:latest
+        image: localhost/tinykmetrics:latest
         args:
         - --influx-url=http://influxdb:8086
         - --influx-token=your-token-here
         - --influx-org=your-org
         - --influx-bucket=k8s
         - --interval=30s
-      livenessProbe:
-        httpGet:
-          path: /status
-          port: 8080
-        initialDelaySeconds: 3
-        periodSeconds: 3
-      readinessProbe:
-        httpGet:
-          path: /ready
-          port: 8080
-        initialDelaySeconds: 5
-        periodSeconds: 5
+        ports:
+        - containerPort: 8080
+        resources:
+          limits:
+            memory: 32Mi
+          requests:
+            memory: 32Mi
+        securityContext:
+          runAsUser: 65534
+          runAsGroup: 65534
+          privileged: false
+          runAsNonRoot: true
+          readOnlyRootFilesystem: true
+          allowPrivilegeEscalation: false
+          procMount: Default
+          capabilities:
+            drop: ["ALL"]
+          seccompProfile:
+            type: RuntimeDefault
+        livenessProbe:
+          httpGet:
+            path: /status
+            port: 8080
+          initialDelaySeconds: 3
+          periodSeconds: 3
+        readinessProbe:
+          httpGet:
+            path: /ready
+            port: 8080
+          initialDelaySeconds: 5
+          periodSeconds: 5
 ```
