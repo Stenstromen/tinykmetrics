@@ -1,476 +1,584 @@
 <!DOCTYPE html>
 <html>
-<head>
+  <head>
     <title>TinyKMetrics Dashboard</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
     <style>
-        :root {
-            /* Dark theme colors */
-            --bg-primary: #1a1b1e;
-            --bg-secondary: #2c2d31;
-            --text-primary: #e4e5e7;
-            --text-secondary: #a1a2a5;
-            --border-color: #3f4044;
-            --accent-color: #6366f1;
-            --hover-color: #818cf8;
-            --chart-grid: #2c2d31;
-            --danger: #ef4444;
-        }
+      :root {
+        /* Dark theme colors */
+        --bg-primary: #1a1b1e;
+        --bg-secondary: #2c2d31;
+        --text-primary: #e4e5e7;
+        --text-secondary: #a1a2a5;
+        --border-color: #3f4044;
+        --accent-color: #6366f1;
+        --hover-color: #818cf8;
+        --chart-grid: #2c2d31;
+        --danger: #ef4444;
+      }
 
-        body {
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            margin: 20px;
-            background-color: var(--bg-primary);
-            color: var(--text-primary);
-        }
+      body {
+        font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI",
+          Roboto, sans-serif;
+        margin: 10px;  /* Reduced margin for mobile */
+        padding: 0;
+        background-color: var(--bg-primary);
+        color: var(--text-primary);
+        max-width: 1200px;  /* Limit max width */
+        margin-left: auto;
+        margin-right: auto;
+      }
 
-        h1, h2, h3 {
-            color: var(--text-primary);
-            margin-bottom: 1rem;
-        }
+      h1 {
+        font-size: clamp(1.5rem, 4vw, 2rem);  /* Responsive font size */
+        padding: 0 10px;
+      }
 
+      h2,
+      h3 {
+        color: var(--text-primary);
+        margin-bottom: 1rem;
+      }
+
+      .filters {
+        margin-bottom: 20px;
+        padding: 1rem;  /* Slightly reduced padding */
+        background-color: var(--bg-secondary);
+        border-radius: 8px;
+        display: flex;
+        gap: 0.75rem;
+        flex-wrap: wrap;
+        align-items: center;
+      }
+
+      .filter-group {
+        display: flex;
+        align-items: center;
+        flex: 1 1 auto;
+        min-width: 200px;  /* Ensure reasonable size on mobile */
+        gap: 0.5rem;
+      }
+
+      .filters label {
+        color: var(--text-secondary);
+        margin-right: 0.5rem;
+      }
+
+      select,
+      button {
+        background-color: var(--bg-primary);
+        color: var(--text-primary);
+        border: 1px solid var(--border-color);
+        border-radius: 6px;
+        padding: 0.5rem;
+        font-size: 0.9rem;
+        transition: all 0.2s ease;
+        flex: 1;
+        min-width: 120px;
+        max-width: 100%;
+      }
+
+      select:hover,
+      button:hover {
+        border-color: var(--accent-color);
+      }
+
+      select:focus,
+      button:focus {
+        outline: none;
+        border-color: var(--accent-color);
+        box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2);
+      }
+
+      button {
+        background-color: var(--accent-color);
+        color: white;
+        border: none;
+        padding: 0.5rem 1rem;
+        cursor: pointer;
+        font-weight: 500;
+        white-space: nowrap;
+        min-width: 100px;
+      }
+
+      button:hover {
+        background-color: var(--hover-color);
+      }
+
+      .chart-container {
+        width: 100%;
+        min-height: 300px;  /* Ensure minimum height for charts */
+        padding: 1rem;  /* Reduced padding for mobile */
+        margin: 0.75rem 0;
+        background-color: var(--bg-secondary);
+        border-radius: 8px;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+      }
+
+      .cluster-overview {
+        background-color: var(--bg-secondary);
+        margin: 20px 0;
+        padding: 1.5rem;
+        border-radius: 8px;
+        border: 1px solid var(--border-color);
+      }
+
+      .namespaces,
+      .pods {
+        margin-top: 1.5rem;
+      }
+
+      ul {
+        list-style-type: none;
+        padding: 0;
+      }
+
+      li {
+        padding: 0.75rem 1rem;
+        border-bottom: 1px solid var(--border-color);
+        transition: background-color 0.2s ease;
+      }
+
+      li:last-child {
+        border-bottom: none;
+      }
+
+      li:hover {
+        background-color: var(--bg-primary);
+      }
+
+      /* Loading cursor styles */
+      body.loading {
+        cursor: wait;
+      }
+
+      /* Chart customization */
+      canvas {
+        border-radius: 8px;
+      }
+
+      .toggle-btn {
+        background-color: var(--bg-primary);
+        border: 1px solid var(--border-color);
+      }
+
+      .toggle-btn:hover {
+        background-color: var(--bg-primary);
+        border-color: var(--accent-color);
+      }
+
+      /* Media Queries */
+      @media (max-width: 768px) {
         .filters {
-            margin-bottom: 20px;
-            padding: 1.5rem;
-            background-color: var(--bg-secondary);
-            border-radius: 8px;
-            display: flex;
-            gap: 1rem;
-            flex-wrap: wrap;
-            align-items: center;
+          flex-direction: column;
+          align-items: stretch;
+          gap: 1rem;
         }
 
-        .filters label {
-            color: var(--text-secondary);
-            margin-right: 0.5rem;
+        .filter-group {
+          flex-direction: column;
+          align-items: stretch;
+        }
+
+        .filter-group label {
+          margin-bottom: 0.25rem;
         }
 
         select, button {
-            background-color: var(--bg-primary);
-            color: var(--text-primary);
-            border: 1px solid var(--border-color);
-            border-radius: 6px;
-            padding: 0.5rem;
-            font-size: 0.9rem;
-            transition: all 0.2s ease;
-        }
-
-        select:hover, button:hover {
-            border-color: var(--accent-color);
-        }
-
-        select:focus, button:focus {
-            outline: none;
-            border-color: var(--accent-color);
-            box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2);
-        }
-
-        button {
-            background-color: var(--accent-color);
-            color: white;
-            border: none;
-            padding: 0.5rem 1rem;
-            cursor: pointer;
-            font-weight: 500;
-        }
-
-        button:hover {
-            background-color: var(--hover-color);
+          width: 100%;
         }
 
         .chart-container {
-            background-color: var(--bg-secondary);
-            border-radius: 8px;
-            padding: 1.5rem;
-            margin: 1rem 0;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+          padding: 0.75rem;
         }
-
-        .cluster-overview {
-            background-color: var(--bg-secondary);
-            margin: 20px 0;
-            padding: 1.5rem;
-            border-radius: 8px;
-            border: 1px solid var(--border-color);
-        }
-
-        .namespaces, .pods {
-            margin-top: 1.5rem;
-        }
-
-        ul {
-            list-style-type: none;
-            padding: 0;
-        }
-
-        li {
-            padding: 0.75rem 1rem;
-            border-bottom: 1px solid var(--border-color);
-            transition: background-color 0.2s ease;
-        }
-
-        li:last-child {
-            border-bottom: none;
-        }
-
-        li:hover {
-            background-color: var(--bg-primary);
-        }
-
-        /* Loading cursor styles */
-        body.loading {
-            cursor: wait;
-        }
-
-        /* Chart customization */
-        canvas {
-            border-radius: 8px;
-        }
+      }
     </style>
-</head>
-<body>
+  </head>
+  <body>
     <h1>TinyKMetrics Dashboard</h1>
-    
+
     <div class="filters">
+      <div class="filter-group">
         <label>Time Range:</label>
         <select id="timeRange" onchange="fetchMetrics()">
-            <option value="5m">Last 5 minutes</option>
-            <option value="15m">Last 15 minutes</option>
-            <option value="30m">Last 30 minutes</option>
-            <option value="1h">Last hour</option>
-            <option value="2h">Last 2 hours</option>
-            <option value="3h">Last 3 hours</option>
-            <option value="6h">Last 6 hours</option>
-            <option value="12h">Last 12 hours</option>
-            <option value="24h">Last 24 hours</option>
-            <option value="2d">Last 2 days</option>
-            <option value="7d">Last 7 days</option>
+          <option value="5m">Last 5 minutes</option>
+          <option value="15m">Last 15 minutes</option>
+          <option value="30m">Last 30 minutes</option>
+          <option value="1h">Last hour</option>
+          <option value="2h">Last 2 hours</option>
+          <option value="3h">Last 3 hours</option>
+          <option value="6h">Last 6 hours</option>
+          <option value="12h">Last 12 hours</option>
+          <option value="24h">Last 24 hours</option>
+          <option value="2d">Last 2 days</option>
+          <option value="7d">Last 7 days</option>
         </select>
+      </div>
 
+      <div class="filter-group">
         <label>Namespace:</label>
         <select id="namespace" onchange="fetchMetrics()">
-            <option value="">All namespaces</option>
+          <option value="">All namespaces</option>
         </select>
+      </div>
 
+      <div class="filter-group">
         <label>Pod:</label>
         <select id="pod" onchange="fetchMetrics()">
-            <option value="">All pods</option>
+          <option value="">All pods</option>
         </select>
+      </div>
 
+      <div class="filter-group">
         <label>Auto-refresh:</label>
         <select id="refreshInterval" onchange="updateRefreshInterval()">
-            <option value="0">Disabled</option>
-            <option value="30000">30 seconds</option>
-            <option value="60000">1 minute</option>
-            <option value="300000">5 minutes</option>
-            <option value="600000">10 minutes</option>
-            <option value="900000">15 minutes</option>
+          <option value="0">Disabled</option>
+          <option value="30000">30 seconds</option>
+          <option value="60000">1 minute</option>
+          <option value="300000">5 minutes</option>
+          <option value="600000">10 minutes</option>
+          <option value="900000">15 minutes</option>
         </select>
+      </div>
 
+      <div class="filter-group">
         <button onclick="fetchMetrics()">Refresh Now</button>
+        <button id="toggleCpu" onclick="toggleChart('cpu')" class="toggle-btn">
+          Hide CPU
+        </button>
+        <button id="toggleMemory" onclick="toggleChart('memory')" class="toggle-btn">
+          Hide Memory
+        </button>
+      </div>
     </div>
 
-    <div class="chart-container">
-        <canvas id="cpuChart"></canvas>
+    <div class="chart-container" id="cpuContainer">
+      <canvas id="cpuChart"></canvas>
     </div>
 
-    <div class="chart-container">
-        <canvas id="memoryChart"></canvas>
+    <div class="chart-container" id="memoryContainer">
+      <canvas id="memoryChart"></canvas>
     </div>
 
     <script>
-        let cpuChart, memoryChart;
-        let refreshIntervalId = null;
+      let cpuChart, memoryChart;
+      let refreshIntervalId = null;
+      let cpuVisible = true;
+      let memoryVisible = true;
 
-        function initCharts() {
-            Chart.defaults.color = 'rgb(228, 229, 231)';
-            Chart.defaults.borderColor = 'rgb(44, 45, 49)';
+      function toggleChart(chartType) {
+        const container = document.getElementById(`${chartType}Container`);
+        const button = document.getElementById(
+          `toggle${chartType.charAt(0).toUpperCase() + chartType.slice(1)}`
+        );
 
-            const cpuCtx = document.getElementById('cpuChart').getContext('2d');
-            const memCtx = document.getElementById('memoryChart').getContext('2d');
+        if (chartType === "cpu") {
+          cpuVisible = !cpuVisible;
+          container.style.display = cpuVisible ? "block" : "none";
+          button.textContent = cpuVisible ? "Hide CPU" : "Show CPU";
+        } else if (chartType === "memory") {
+          memoryVisible = !memoryVisible;
+          container.style.display = memoryVisible ? "block" : "none";
+          button.textContent = memoryVisible ? "Hide Memory" : "Show Memory";
+        }
+      }
 
-            const commonOptions = {
-                responsive: true,
-                scales: {
-                    x: {
-                        type: 'time',
-                        time: {
-                            unit: 'minute',
-                            displayFormats: {
-                                minute: 'HH:mm'
-                            }
-                        },
-                        grid: {
-                            color: 'rgba(75, 85, 99, 0.3)',  // Lighter grid lines
-                            borderColor: 'rgba(75, 85, 99, 0.5)'  // Lighter border
-                        },
-                        title: {
-                            display: true,
-                            text: 'Time',
-                            color: 'rgb(228, 229, 231)'
-                        }
-                    },
-                    y: {
-                        beginAtZero: true,
-                        grid: {
-                            color: 'rgba(75, 85, 99, 0.3)',  // Lighter grid lines
-                            borderColor: 'rgba(75, 85, 99, 0.5)'  // Lighter border
-                        },
-                        title: {
-                            display: true,
-                            color: 'rgb(228, 229, 231)'
-                        }
-                    }
+      function initCharts() {
+        Chart.defaults.color = "rgb(228, 229, 231)";
+        Chart.defaults.borderColor = "rgb(44, 45, 49)";
+
+        const cpuCtx = document.getElementById("cpuChart").getContext("2d");
+        const memCtx = document.getElementById("memoryChart").getContext("2d");
+
+        const commonOptions = {
+          responsive: true,
+          scales: {
+            x: {
+              type: "time",
+              time: {
+                unit: "minute",
+                displayFormats: {
+                  minute: "HH:mm",
                 },
-                plugins: {
-                    legend: {
-                        labels: {
-                            color: 'rgb(228, 229, 231)',
-                            padding: 20
-                        }
-                    },
-                    tooltip: {
-                        mode: 'index',
-                        intersect: false,
-                        backgroundColor: 'rgba(44, 45, 49, 0.9)',
-                        titleColor: 'rgb(228, 229, 231)',
-                        bodyColor: 'rgb(228, 229, 231)',
-                        borderColor: 'rgb(75, 85, 99)',
-                        borderWidth: 1,
-                        padding: 10
-                    }
-                }
-            };
+              },
+              grid: {
+                color: "rgba(75, 85, 99, 0.3)", // Lighter grid lines
+                borderColor: "rgba(75, 85, 99, 0.5)", // Lighter border
+              },
+              title: {
+                display: true,
+                text: "Time",
+                color: "rgb(228, 229, 231)",
+              },
+            },
+            y: {
+              beginAtZero: true,
+              grid: {
+                color: "rgba(75, 85, 99, 0.3)", // Lighter grid lines
+                borderColor: "rgba(75, 85, 99, 0.5)", // Lighter border
+              },
+              title: {
+                display: true,
+                color: "rgb(228, 229, 231)",
+              },
+            },
+          },
+          plugins: {
+            legend: {
+              labels: {
+                color: "rgb(228, 229, 231)",
+                padding: 20,
+              },
+            },
+            tooltip: {
+              mode: "index",
+              intersect: false,
+              backgroundColor: "rgba(44, 45, 49, 0.9)",
+              titleColor: "rgb(228, 229, 231)",
+              bodyColor: "rgb(228, 229, 231)",
+              borderColor: "rgb(75, 85, 99)",
+              borderWidth: 1,
+              padding: 10,
+            },
+          },
+        };
 
-            cpuChart = new Chart(cpuCtx, {
-                type: 'line',
-                data: {
-                    datasets: []
-                },
-                options: {
-                    ...commonOptions,
-                    plugins: {
-                        ...commonOptions.plugins,
-                        title: {
-                            display: true,
-                            text: 'CPU Usage (millicores)'
-                        }
-                    }
-                }
-            });
-
-            memoryChart = new Chart(memCtx, {
-                type: 'line',
-                data: {
-                    datasets: []
-                },
-                options: {
-                    ...commonOptions,
-                    plugins: {
-                        ...commonOptions.plugins,
-                        title: {
-                            display: true,
-                            text: 'Memory Usage (bytes)'
-                        }
-                    },
-                    scales: {
-                        ...commonOptions.scales,
-                        y: {
-                            ...commonOptions.scales.y,
-                            ticks: {
-                                callback: function(value) {
-                                    return (value / (1024 * 1024)).toFixed(0) + ' MB';
-                                }
-                            }
-                        }
-                    }
-                }
-            });
-        }
-
-        async function fetchMetrics() {
-            try {
-                const timeRange = document.getElementById('timeRange').value;
-                const namespace = document.getElementById('namespace').value;
-                const pod = document.getElementById('pod').value;
-
-                // Show loading state
-                document.body.style.cursor = 'wait';
-                
-                const response = await fetch('/api/metrics', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({
-                        start: timeRange,
-                        namespace: namespace,
-                        pod: pod
-                    })
-                });
-
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
-
-                const data = await response.json();
-
-                // Process data for charts
-                const cpuData = new Map();
-                const memData = new Map();
-
-                data.forEach(record => {
-                    const key = `${record.namespace}/${record.pod}/${record.container}`;
-                    const time = new Date(record.time);
-
-                    if (record.field === "cpu_usage") {
-                        if (!cpuData.has(key)) cpuData.set(key, []);
-                        cpuData.get(key).push({x: time, y: record.value});
-                    } else if (record.field === "memory_usage") {
-                        if (!memData.has(key)) memData.set(key, []);
-                        memData.get(key).push({x: time, y: record.value});
-                    }
-                });
-
-                // Update charts
-                cpuChart.data.datasets = Array.from(cpuData.entries()).map(([key, values], index) => ({
-                    label: key,
-                    data: values,
-                    fill: false,
-                    tension: 0.1,
-                    borderColor: getChartColors(index),
-                    backgroundColor: getChartColors(index),
-                    borderWidth: 2,
-                    pointRadius: 3,
-                    pointHoverRadius: 5
-                }));
-                cpuChart.update();
-
-                memoryChart.data.datasets = Array.from(memData.entries()).map(([key, values], index) => ({
-                    label: key,
-                    data: values,
-                    fill: false,
-                    tension: 0.1,
-                    borderColor: getChartColors(index),
-                    backgroundColor: getChartColors(index),
-                    borderWidth: 2,
-                    pointRadius: 3,
-                    pointHoverRadius: 5
-                }));
-                memoryChart.update();
-
-            } catch (error) {
-                console.error('Error fetching metrics:', error);
-            } finally {
-                // Reset cursor
-                document.body.style.cursor = 'default';
-            }
-        }
-
-        async function loadClusterOverview() {
-            // Load namespaces
-            const nsResponse = await fetch('/api/namespaces');
-            const nsData = await nsResponse.json();
-            const nsSelect = document.getElementById('namespace');
-            
-            // Clear existing options except the first one
-            while (nsSelect.options.length > 1) {
-                nsSelect.remove(1);
-            }
-            
-            nsData.namespaces.forEach(ns => {
-                const option = document.createElement('option');
-                option.value = ns;
-                option.textContent = ns;
-                nsSelect.appendChild(option);
-            });
-
-            // Load all pods initially
-            await updatePodList();
-
-            // Add event listener for namespace changes
-            nsSelect.addEventListener('change', async () => {
-                await updatePodList();
-                // fetchMetrics will be called by the pod select's onchange event
-            });
-        }
-
-        async function updatePodList() {
-            const selectedNamespace = document.getElementById('namespace').value;
-            const podSelect = document.getElementById('pod');
-            
-            // Clear existing pod options except "All pods"
-            while (podSelect.options.length > 1) {
-                podSelect.remove(1);
-            }
-
-            // Fetch pods (optionally filtered by namespace)
-            const url = selectedNamespace 
-                ? `/api/pods?namespace=${encodeURIComponent(selectedNamespace)}`
-                : '/api/pods';
-            
-            const podsResponse = await fetch(url);
-            const podsData = await podsResponse.json();
-            
-            // Add pod options
-            podsData.pods.forEach(pod => {
-                const option = document.createElement('option');
-                option.value = pod.name;
-                option.textContent = selectedNamespace ? pod.name : `${pod.namespace}/${pod.name}`;
-                podSelect.appendChild(option);
-            });
-        }
-
-        function updateRefreshInterval() {
-            // Clear existing interval if any
-            if (refreshIntervalId) {
-                clearInterval(refreshIntervalId);
-                refreshIntervalId = null;
-            }
-
-            // Get new interval value
-            const interval = parseInt(document.getElementById('refreshInterval').value);
-            
-            // Set new interval if not disabled (0)
-            if (interval > 0) {
-                refreshIntervalId = setInterval(fetchMetrics, interval);
-                console.log(`Auto-refresh enabled: ${interval/1000} seconds`);
-            } else {
-                console.log('Auto-refresh disabled');
-            }
-        }
-
-        initCharts();
-        document.addEventListener('DOMContentLoaded', () => {
-            loadClusterOverview();
-            fetchMetrics();
-            // Set default refresh interval (e.g., 1 minute)
-            document.getElementById('refreshInterval').value = '60000';
-            updateRefreshInterval();
+        cpuChart = new Chart(cpuCtx, {
+          type: "line",
+          data: {
+            datasets: [],
+          },
+          options: {
+            ...commonOptions,
+            plugins: {
+              ...commonOptions.plugins,
+              title: {
+                display: true,
+                text: "CPU Usage (millicores)",
+              },
+            },
+          },
         });
 
-        // Clean up interval when leaving the page
-        window.addEventListener('beforeunload', () => {
-            if (refreshIntervalId) {
-                clearInterval(refreshIntervalId);
+        memoryChart = new Chart(memCtx, {
+          type: "line",
+          data: {
+            datasets: [],
+          },
+          options: {
+            ...commonOptions,
+            plugins: {
+              ...commonOptions.plugins,
+              title: {
+                display: true,
+                text: "Memory Usage (bytes)",
+              },
+            },
+            scales: {
+              ...commonOptions.scales,
+              y: {
+                ...commonOptions.scales.y,
+                ticks: {
+                  callback: function (value) {
+                    return (value / (1024 * 1024)).toFixed(0) + " MB";
+                  },
+                },
+              },
+            },
+          },
+        });
+      }
+
+      async function fetchMetrics() {
+        try {
+          const timeRange = document.getElementById("timeRange").value;
+          const namespace = document.getElementById("namespace").value;
+          const pod = document.getElementById("pod").value;
+
+          // Show loading state
+          document.body.style.cursor = "wait";
+
+          const response = await fetch("/api/metrics", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              start: timeRange,
+              namespace: namespace,
+              pod: pod,
+            }),
+          });
+
+          if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+          }
+
+          const data = await response.json();
+
+          // Process data for charts
+          const cpuData = new Map();
+          const memData = new Map();
+
+          data.forEach((record) => {
+            const key = `${record.namespace}/${record.pod}/${record.container}`;
+            const time = new Date(record.time);
+
+            if (record.field === "cpu_usage") {
+              if (!cpuData.has(key)) cpuData.set(key, []);
+              cpuData.get(key).push({ x: time, y: record.value });
+            } else if (record.field === "memory_usage") {
+              if (!memData.has(key)) memData.set(key, []);
+              memData.get(key).push({ x: time, y: record.value });
             }
+          });
+
+          // Update charts
+          cpuChart.data.datasets = Array.from(cpuData.entries()).map(
+            ([key, values], index) => ({
+              label: key,
+              data: values,
+              fill: false,
+              tension: 0.1,
+              borderColor: getChartColors(index),
+              backgroundColor: getChartColors(index),
+              borderWidth: 2,
+              pointRadius: 3,
+              pointHoverRadius: 5,
+            })
+          );
+          cpuChart.update();
+
+          memoryChart.data.datasets = Array.from(memData.entries()).map(
+            ([key, values], index) => ({
+              label: key,
+              data: values,
+              fill: false,
+              tension: 0.1,
+              borderColor: getChartColors(index),
+              backgroundColor: getChartColors(index),
+              borderWidth: 2,
+              pointRadius: 3,
+              pointHoverRadius: 5,
+            })
+          );
+          memoryChart.update();
+        } catch (error) {
+          console.error("Error fetching metrics:", error);
+        } finally {
+          // Reset cursor
+          document.body.style.cursor = "default";
+        }
+      }
+
+      async function loadClusterOverview() {
+        // Load namespaces
+        const nsResponse = await fetch("/api/namespaces");
+        const nsData = await nsResponse.json();
+        const nsSelect = document.getElementById("namespace");
+
+        // Clear existing options except the first one
+        while (nsSelect.options.length > 1) {
+          nsSelect.remove(1);
+        }
+
+        nsData.namespaces.forEach((ns) => {
+          const option = document.createElement("option");
+          option.value = ns;
+          option.textContent = ns;
+          nsSelect.appendChild(option);
         });
 
-        // Update the fetchMetrics function to include colors
-        function getChartColors(index) {
-            const colors = [
-                '#6366f1', // Indigo
-                '#ec4899', // Pink
-                '#8b5cf6', // Purple
-                '#10b981', // Emerald
-                '#f59e0b', // Amber
-                '#ef4444', // Red
-                '#06b6d4', // Cyan
-                '#84cc16'  // Lime
-            ];
-            return colors[index % colors.length];
+        // Load all pods initially
+        await updatePodList();
+
+        // Add event listener for namespace changes
+        nsSelect.addEventListener("change", async () => {
+          await updatePodList();
+          // fetchMetrics will be called by the pod select's onchange event
+        });
+      }
+
+      async function updatePodList() {
+        const selectedNamespace = document.getElementById("namespace").value;
+        const podSelect = document.getElementById("pod");
+
+        // Clear existing pod options except "All pods"
+        while (podSelect.options.length > 1) {
+          podSelect.remove(1);
         }
+
+        // Fetch pods (optionally filtered by namespace)
+        const url = selectedNamespace
+          ? `/api/pods?namespace=${encodeURIComponent(selectedNamespace)}`
+          : "/api/pods";
+
+        const podsResponse = await fetch(url);
+        const podsData = await podsResponse.json();
+
+        // Add pod options
+        podsData.pods.forEach((pod) => {
+          const option = document.createElement("option");
+          option.value = pod.name;
+          option.textContent = selectedNamespace
+            ? pod.name
+            : `${pod.namespace}/${pod.name}`;
+          podSelect.appendChild(option);
+        });
+      }
+
+      function updateRefreshInterval() {
+        // Clear existing interval if any
+        if (refreshIntervalId) {
+          clearInterval(refreshIntervalId);
+          refreshIntervalId = null;
+        }
+
+        // Get new interval value
+        const interval = parseInt(
+          document.getElementById("refreshInterval").value
+        );
+
+        // Set new interval if not disabled (0)
+        if (interval > 0) {
+          refreshIntervalId = setInterval(fetchMetrics, interval);
+          console.log(`Auto-refresh enabled: ${interval / 1000} seconds`);
+        } else {
+          console.log("Auto-refresh disabled");
+        }
+      }
+
+      initCharts();
+      document.addEventListener("DOMContentLoaded", () => {
+        loadClusterOverview();
+        fetchMetrics();
+        // Set default refresh interval (e.g., 1 minute)
+        document.getElementById("refreshInterval").value = "60000";
+        updateRefreshInterval();
+      });
+
+      // Clean up interval when leaving the page
+      window.addEventListener("beforeunload", () => {
+        if (refreshIntervalId) {
+          clearInterval(refreshIntervalId);
+        }
+      });
+
+      // Update the fetchMetrics function to include colors
+      function getChartColors(index) {
+        const colors = [
+          "#6366f1", // Indigo
+          "#ec4899", // Pink
+          "#8b5cf6", // Purple
+          "#10b981", // Emerald
+          "#f59e0b", // Amber
+          "#ef4444", // Red
+          "#06b6d4", // Cyan
+          "#84cc16", // Lime
+        ];
+        return colors[index % colors.length];
+      }
     </script>
-</body>
-</html> 
+  </body>
+</html>
