@@ -30,6 +30,24 @@ go run cmd/tinykmetrics/main.go --influx-url=http://localhost:8086 \
 ```yaml
 ---
 apiVersion: v1
+kind: Namespace
+metadata:
+  name: monitoring
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: tinykmetrics
+  namespace: monitoring
+spec:
+  selector:
+    app: tinykmetrics
+  ports:
+    - port: 8080
+      targetPort: 8080
+      name: http
+---
+apiVersion: v1
 kind: ServiceAccount
 metadata:
   name: tinykmetrics
@@ -42,6 +60,9 @@ metadata:
 rules:
 - apiGroups: ["metrics.k8s.io"]
   resources: ["nodes", "pods"]
+  verbs: ["get", "list"]
+- apiGroups: [""]
+  resources: ["pods", "namespaces"]
   verbs: ["get", "list"]
 ---
 apiVersion: rbac.authorization.k8s.io/v1
@@ -86,9 +107,11 @@ spec:
         - containerPort: 8080
         resources:
           limits:
-            memory: 32Mi
+            memory: 512Mi
+            cpu: 500m
           requests:
-            memory: 32Mi
+            memory: 512Mi
+            cpu: 500m
         securityContext:
           runAsUser: 65534
           runAsGroup: 65534
