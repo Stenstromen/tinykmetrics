@@ -2,7 +2,7 @@ module github.com/stenstromen/tinykmetrics
 
 go 1.23.0
 
-toolchain go1.23.4
+toolchain go1.24.1
 
 replace github.com/stenstromen/tinykmetrics => ./
 
@@ -57,6 +57,6 @@ require (
 	github.com/influxdata/line-protocol v0.0.0-20200327222509-2487e7298839 // indirect
 	github.com/oapi-codegen/runtime v1.0.0 // indirect
 	golang.org/x/net v0.30.0 // indirect
-	k8s.io/apimachinery v0.32.1
+	k8s.io/apimachinery v0.32.3
 	k8s.io/metrics v0.32.1
 )
