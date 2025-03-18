@@ -14,14 +14,27 @@ func main() {
 	cfg := config.ParseFlags()
 
 	// Initialize services
-	kubeConfig, err := utils.GetKubeConfig(cfg.KubeconfigPath)
-	if err != nil {
-		log.Fatalf("Error getting Kubernetes config: %v", err)
-	}
+	var kubeService *services.KubernetesService
+	var err error
 
-	kubeService, err := services.NewKubernetesService(kubeConfig)
-	if err != nil {
-		log.Fatalf("Error creating Kubernetes service: %v", err)
+	if cfg.TestMode {
+		// In test mode, create a fake config
+		log.Println("Running in test mode, using mock Kubernetes client")
+		kubeService, err = services.NewKubernetesServiceWithFakeClient(cfg.TestMode)
+		if err != nil {
+			log.Fatalf("Error creating Kubernetes service with fake client: %v", err)
+		}
+	} else {
+		// Normal mode, use real Kubernetes config
+		kubeConfig, err := utils.GetKubeConfig(cfg.KubeconfigPath)
+		if err != nil {
+			log.Fatalf("Error getting Kubernetes config: %v", err)
+		}
+
+		kubeService, err = services.NewKubernetesService(kubeConfig, cfg.TestMode)
+		if err != nil {
+			log.Fatalf("Error creating Kubernetes service: %v", err)
+		}
 	}
 
 	influxService := services.NewInfluxDBService(

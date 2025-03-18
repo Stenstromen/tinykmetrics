@@ -14,6 +14,7 @@ type Config struct {
 	KubeconfigPath string
 	PollInterval   time.Duration
 	ListenAddr     string
+	TestMode       bool
 }
 
 func ParseFlags() *Config {
@@ -25,6 +26,7 @@ func ParseFlags() *Config {
 	flag.StringVar(&cfg.KubeconfigPath, "kubeconfig", "", "Path to kubeconfig file")
 	flag.DurationVar(&cfg.PollInterval, "interval", 30*time.Second, "Metrics collection interval")
 	flag.StringVar(&cfg.ListenAddr, "listen-addr", ":8080", "Web server listen address")
+	flag.BoolVar(&cfg.TestMode, "test-mode", false, "Start in test mode with mock data for first metric collection")
 	flag.Parse()
 
 	if cfg.InfluxToken == "" {
