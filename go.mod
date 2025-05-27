@@ -55,5 +55,5 @@ require (
 	github.com/oapi-codegen/runtime v1.1.1 // indirect
 	golang.org/x/net v0.38.0 // indirect
 	k8s.io/apimachinery v0.33.1
-	k8s.io/metrics v0.33.0
+	k8s.io/metrics v0.33.1
 )
