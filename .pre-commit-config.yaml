@@ -9,3 +9,8 @@ repos:
         always_run: true
       - id: go-mod-tidy
         always_run: true
+  - repo: https://github.com/jorisroovers/gitlint
+    rev: v0.19.1  # Use the latest release
+    hooks:
+      - id: gitlint
+        stages: [commit-msg]
