@@ -54,6 +54,6 @@ require (
 	github.com/influxdata/line-protocol v0.0.0-20210922203350-b1ad95c89adf // indirect
 	github.com/oapi-codegen/runtime v1.1.1 // indirect
 	golang.org/x/net v0.38.0 // indirect
-	k8s.io/apimachinery v0.33.1
+	k8s.io/apimachinery v0.33.2
 	k8s.io/metrics v0.33.1
 )
